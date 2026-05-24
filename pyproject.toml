@@ -1,0 +1,21 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "obkey2"
+version = "0.0.8"
+description = "Openbox Key Editor"
+authors = [{name = "nsf", email = "no.smile.face@gmail.com"}]
+license = {text = "MIT"}
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "PyGObject",
+]
+
+[project.scripts]
+obkey = "obkey2.__main__:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/obkey2"]
