@@ -571,6 +571,8 @@ class ActionList:
         self.actions_cb = None
         self._on_change = on_change
         self.copied = None
+        self._updating_type_combo = False
+        self.type_combo = None
 
         self.cond_paste_buffer         = SensCondition(False)
         self.cond_selection_available  = SensCondition(False)
@@ -586,10 +588,12 @@ class ActionList:
 
         self.model = self.create_model()
         self.view = self.create_view(self.model)
+        self.type_combo = self._create_type_combo()
 
         self.context_menu = self.create_context_menu()
 
         self.widget.pack_start(self.create_scroll(self.view), True, True, 0)
+        self.widget.pack_start(self._create_type_bar(), False, False, 0)
         self.widget.pack_start(self.create_toolbar(), False, False, 0)
 
         self.sw_paste_buffer.notify()
@@ -618,19 +622,7 @@ class ActionList:
         return scroll
 
     def create_view(self, model):
-        renderer = Gtk.CellRendererCombo()
-
-        def editingstarted(cell, widget, path):
-            widget.set_wrap_width(4)
-
-        renderer.props.model = self.create_choices()
-        renderer.props.text_column = 0
-        renderer.props.editable = True
-        renderer.props.has_entry = True
-        renderer.connect('changed', self.action_class_changed)
-        renderer.connect('editing-started', editingstarted)
-        renderer.connect('edited', self.action_text_edited)
-
+        renderer = Gtk.CellRendererText()
         column = Gtk.TreeViewColumn(_("Actions"), renderer, text=0)
 
         view = Gtk.TreeView(model=model)
@@ -638,6 +630,47 @@ class ActionList:
         view.get_selection().connect('changed', self.view_cursor_changed)
         view.connect('button-press-event', self.view_button_clicked)
         return view
+
+    def _create_type_combo(self):
+        choices = self.create_choices()
+        combo = Gtk.ComboBox.new_with_model(choices)
+        cell = Gtk.CellRendererText()
+        combo.pack_start(cell, True)
+        combo.add_attribute(cell, 'text', 0)
+        combo.set_wrap_width(4)
+        combo.set_sensitive(False)
+        combo.connect('changed', self._type_combo_changed)
+        return combo
+
+    def _create_type_bar(self):
+        bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
+        bar.set_margin_start(4)
+        bar.set_margin_end(4)
+        bar.set_margin_top(2)
+        bar.set_margin_bottom(2)
+        bar.pack_start(Gtk.Label(label=_("Type:")), False, False, 0)
+        bar.pack_start(self.type_combo, True, True, 0)
+        return bar
+
+    def _type_combo_changed(self, combo):
+        if self._updating_type_combo:
+            return
+        (model, it) = self.view.get_selection().get_selected()
+        if not it:
+            return
+        active_it = combo.get_active_iter()
+        if active_it is None:
+            return
+        choices = combo.get_model()
+        label = choices.get_value(active_it, 0)
+        canonical = choices.get_value(active_it, 1)
+        path = model.get_string_from_iter(it)
+        self.model[path][0] = label
+        self.model[path][1].mutate(canonical)
+        if self.proptable:
+            self.proptable.set_action(self.model[path][1])
+        if self._on_change:
+            self._on_change()
 
     def create_context_menu(self):
         context_menu = Gtk.Menu()
@@ -712,31 +745,6 @@ class ActionList:
                 self.context_menu.popup(None, None, None, None, event.button, time)
             return 1
 
-    def action_class_changed(self, combo, path, it):
-        m = combo.props.model
-        ntype = m.get_value(it, 1)
-        self.model[path][0] = m.get_value(it, 0)
-        self.model[path][1].mutate(ntype)
-        if self.proptable:
-            self.proptable.set_action(self.model[path][1])
-        if self._on_change:
-            self._on_change()
-
-    def action_text_edited(self, cell, path, text):
-        choices = cell.props.model
-        it = choices.get_iter_first()
-        while it:
-            if choices.get_value(it, 0) == text:
-                canonical = choices.get_value(it, 1)
-                self.model[path][0] = text
-                self.model[path][1].mutate(canonical)
-                if self.proptable:
-                    self.proptable.set_action(self.model[path][1])
-                if self._on_change:
-                    self._on_change()
-                return
-            it = choices.iter_next(it)
-
     def view_cursor_changed(self, selection):
         (model, it) = selection.get_selected()
         act = None
@@ -744,16 +752,31 @@ class ActionList:
             act = model.get_value(it, 1)
         if self.proptable:
             self.proptable.set_action(act)
-        if act:
+        self._updating_type_combo = True
+        if act and self.actions is not None and self.type_combo is not None:
+            choices = self.type_combo.get_model()
+            cit = choices.get_iter_first()
+            while cit:
+                if choices.get_value(cit, 1) == act.name:
+                    self.type_combo.set_active_iter(cit)
+                    break
+                cit = choices.iter_next(cit)
+            else:
+                self.type_combo.set_active(-1)
+            self.type_combo.set_sensitive(True)
             l = len(self.actions)
             i = self.actions.index(act)
             self.cond_can_move_up.set_state(i != 0)
             self.cond_can_move_down.set_state(l > 1 and i + 1 < l)
             self.cond_selection_available.set_state(True)
         else:
+            if self.type_combo is not None:
+                self.type_combo.set_active(-1)
+                self.type_combo.set_sensitive(False)
             self.cond_can_move_up.set_state(False)
             self.cond_can_move_down.set_state(False)
             self.cond_selection_available.set_state(False)
+        self._updating_type_combo = False
 
     def cut_selected(self):
         self.copy_selected()
@@ -880,7 +903,7 @@ class ActionList:
 class MiniActionList(ActionList):
     def __init__(self, proptable=None, on_change=None):
         ActionList.__init__(self, proptable, on_change)
-        self.widget.set_size_request(-1, 120)
+        self.widget.set_size_request(-1, 160)
         self.view.set_headers_visible(False)
 
     def create_choices(self):
@@ -1306,6 +1329,7 @@ actions = {
     "DirectionalTargetSouthEast":[OCBoolean("dialog", True), OCBoolean("bar", True), OCBoolean("raise", False), OCFinalActions()],
     "DirectionalTargetSouthWest":[OCBoolean("dialog", True), OCBoolean("bar", True), OCBoolean("raise", False), OCFinalActions()],
     "Desktop":             [OCNumber("desktop", 1, 1, 9999)],
+    "GoToDesktop":         [OCString("to", "1"), OCBoolean("wrap", True)],
     "DesktopNext":         [OCBoolean("wrap", True)],
     "DesktopPrevious":     [OCBoolean("wrap", True)],
     "DesktopLeft":         [OCBoolean("wrap", True)],
@@ -1404,7 +1428,11 @@ class OBAction:
         try:
             self.option_defs = actions[self.name]
         except KeyError:
-            pass
+            lower = self.name.lower()
+            for k, v in actions.items():
+                if k.lower() == lower:
+                    self.option_defs = v
+                    break
         for od in self.option_defs:
             od.parse(self, dom)
 

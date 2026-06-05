@@ -2,11 +2,13 @@
 
 All notable changes to this project will be documented here.
 
-## [0.0.13] - 2026-06-05
+## [0.0.14] - 2026-06-05
 
 ### Fixed
-- `CellRendererCombo` with `has_entry=False` triggered `gtk_cell_area_activate_cell: GTK_IS_CELL_EDITABLE` assertion in GTK3, preventing the action-type dropdown from opening. Switched to `has_entry=True` and added an `edited` signal handler to validate typed action names.
-- `PropertyTable.clear()` removed child widgets without destroying them, leaving orphaned GDK windows and producing `gdk_window_get_window_type: GDK_IS_WINDOW` assertions. Now calls `child.destroy()` after each removal.
+- `CellRendererCombo` triggers `gtk_cell_area_activate_cell: GTK_IS_CELL_EDITABLE` in this GTK3 build and cannot open the action-type dropdown. Replaced with a plain `CellRendererText` column for display and a persistent `Gtk.ComboBox` type-selector bar between the action list and toolbar. The combo activates when an action is selected and changes the action type immediately on selection.
+- Added "GoToDesktop" action to the actions dict (`to`, `wrap` options) so existing keybinds using that action name show editable options in the property panel.
+- Added case-insensitive fallback in `OBAction.parse` so action names like "gotodesktop" or "GotoDesktop" in rc.xml match the dict regardless of capitalisation (Openbox itself is case-insensitive).
+- `PropertyTable.clear()` removed child widgets without destroying them, leaving orphaned GDK windows (`gdk_window_get_window_type` assertion). Now calls `child.destroy()` after each removal.
 
 ## [0.0.12] - 2026-06-05
 
