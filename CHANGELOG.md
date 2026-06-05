@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented here.
 
+## [0.0.13] - 2026-06-05
+
+### Fixed
+- `CellRendererCombo` with `has_entry=False` triggered `gtk_cell_area_activate_cell: GTK_IS_CELL_EDITABLE` assertion in GTK3, preventing the action-type dropdown from opening. Switched to `has_entry=True` and added an `edited` signal handler to validate typed action names.
+- `PropertyTable.clear()` removed child widgets without destroying them, leaving orphaned GDK windows and producing `gdk_window_get_window_type: GDK_IS_WINDOW` assertions. Now calls `child.destroy()` after each removal.
+
 ## [0.0.12] - 2026-06-05
 
 ### Changed
