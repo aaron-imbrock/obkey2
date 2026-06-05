@@ -4,9 +4,9 @@ build-backend = "hatchling.build"
 
 [project]
 name = "obkey2"
-version = "0.0.8"
+version = "0.0.10"
 description = "Openbox Key Editor"
-authors = [{name = "nsf", email = "no.smile.face@gmail.com"}]
+authors = [{name = "Aaron Imbrock", email = "contact@sizza.net"}]
 license = {text = "MIT"}
 readme = "README.md"
 requires-python = ">=3.9"
