@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented here.
 
+## [0.0.12] - 2026-06-05
+
+### Changed
+- Replaced all deprecated GTK2-era APIs with proper GTK3 equivalents: `Gtk.ToolButton.new_from_stock`, `Gtk.ImageMenuItem`, `Gtk.Table`, `Gtk.AttachOptions`, `add_with_viewport`, and `Label.set_padding` are gone.
+- Toolbar and context menu icons now use named freedesktop theme icons (`list-add`, `list-remove`, `go-up`, `go-down`, `edit-cut`, `edit-copy`, `edit-paste`, `edit-delete`, `format-indent-more`, `application-exit`) instead of deprecated GTK stock items.
+- `PropertyTable` and `OCStartupNotify` sub-table rebuilt with `Gtk.Grid` (row/column spacing, margins) replacing the deprecated `Gtk.Table`.
+- Main window now uses `Gtk.HeaderBar` with title, filename subtitle, and Save button (`document-save-symbolic`); Save removed from the keybind toolbar.
+- Default window size increased to 800×560; right pane initialises at 280 px, vertical split at 50 % of height.
+- Entry module renamed from `__main__.py` to `app.py`; `pyproject.toml` entry point updated to `obkey2.app:main`.
+
 ## [0.0.11] - 2026-06-04
 
 ### Fixed

@@ -14,7 +14,6 @@ import gettext
 #------------------------------------------------------------------------------
 
 _pkg_dir = os.path.dirname(os.path.abspath(__file__))
-config_icons = os.path.join(_pkg_dir, 'icons')
 config_locale_dir = os.path.join(_pkg_dir, 'locale')
 
 _ = lambda x: x
@@ -133,6 +132,27 @@ class SensSwitcher:
         self.set_sensitive(True)
 
 #------------------------------------------------------------------------------
+# GTK helpers
+#------------------------------------------------------------------------------
+
+def _tool_button(icon_name, tooltip, callback):
+    btn = Gtk.ToolButton()
+    btn.set_icon_name(icon_name)
+    btn.set_tooltip_text(tooltip)
+    btn.connect('clicked', callback)
+    return btn
+
+
+def _menu_item(icon_name, label_text, callback):
+    item = Gtk.MenuItem()
+    box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+    box.pack_start(Gtk.Image.new_from_icon_name(icon_name, Gtk.IconSize.MENU), False, False, 0)
+    box.pack_start(Gtk.Label(label=label_text, use_underline=True), False, False, 0)
+    item.add(box)
+    item.connect('activate', callback)
+    return item
+
+#------------------------------------------------------------------------------
 # KeyTable
 #------------------------------------------------------------------------------
 
@@ -143,8 +163,6 @@ class KeyTable:
         self.quit_cb = quit_cb or Gtk.main_quit
         self.actionlist = actionlist
         actionlist.set_callback(self.actions_cb)
-
-        self.icons = self.load_icons()
 
         self.model, self.cqk_model = self.create_models()
         self.view, self.cqk_view = self.create_views(self.model, self.cqk_model)
@@ -182,7 +200,10 @@ class KeyTable:
     def create_cqk_hbox(self, cqk_view):
         cqk_hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         cqk_label = Gtk.Label(label=_("chainQuitKey:"))
-        cqk_label.set_padding(5, 5)
+        cqk_label.set_margin_start(5)
+        cqk_label.set_margin_end(5)
+        cqk_label.set_margin_top(5)
+        cqk_label.set_margin_bottom(5)
 
         cqk_frame = Gtk.Frame()
         cqk_frame.add(cqk_view)
@@ -194,33 +215,23 @@ class KeyTable:
     def create_context_menu(self):
         context_menu = Gtk.Menu()
 
-        item = Gtk.ImageMenuItem.new_from_stock("gtk-cut", None)
-        item.connect('activate', lambda menu: self.cut_selected())
-        item.get_child().set_label(_("Cu_t"))
+        item = _menu_item("edit-cut",    _("Cu_t"),           lambda m: self.cut_selected())
         context_menu.append(item)
         self.sw_selection_available.append(item)
 
-        item = Gtk.ImageMenuItem.new_from_stock("gtk-copy", None)
-        item.connect('activate', lambda menu: self.copy_selected())
-        item.get_child().set_label(_("_Copy"))
+        item = _menu_item("edit-copy",   _("_Copy"),          lambda m: self.copy_selected())
         context_menu.append(item)
         self.sw_selection_available.append(item)
 
-        item = Gtk.ImageMenuItem.new_from_stock("gtk-paste", None)
-        item.connect('activate', lambda menu: self.insert_sibling(self.copied))
-        item.get_child().set_label(_("_Paste"))
+        item = _menu_item("edit-paste",  _("_Paste"),         lambda m: self.insert_sibling(self.copied))
         context_menu.append(item)
         self.sw_paste_buffer.append(item)
 
-        item = Gtk.ImageMenuItem.new_from_stock("gtk-paste", None)
-        item.get_child().set_label(_("P_aste as child"))
-        item.connect('activate', lambda menu: self.insert_child(self.copied))
+        item = _menu_item("edit-paste",  _("P_aste as child"), lambda m: self.insert_child(self.copied))
         context_menu.append(item)
         self.sw_insert_child_and_paste.append(item)
 
-        item = Gtk.ImageMenuItem.new_from_stock("gtk-remove", None)
-        item.connect('activate', lambda menu: self.del_selected())
-        item.get_child().set_label(_("_Remove"))
+        item = _menu_item("list-remove", _("_Remove"),        lambda m: self.del_selected())
         context_menu.append(item)
         self.sw_selection_available.append(item)
 
@@ -303,29 +314,21 @@ class KeyTable:
         toolbar.set_style(Gtk.ToolbarStyle.ICONS)
         toolbar.set_show_arrow(False)
 
-        but = Gtk.ToolButton.new_from_stock("gtk-save")
-        but.set_tooltip_text(_("Save ") + self.ob.path + _(" file"))
-        but.connect('clicked', lambda but: self.ob.save())
-        toolbar.insert(but, -1)
+        toolbar.insert(_tool_button("list-add",
+            _("Insert sibling keybind"),
+            lambda b: self.insert_sibling(OBKeyBind())), -1)
 
-        toolbar.insert(Gtk.SeparatorToolItem(), -1)
+        btn = _tool_button("format-indent-more",
+            _("Insert child keybind"),
+            lambda b: self.insert_child(OBKeyBind()))
+        self.sw_insert_child.append(btn)
+        toolbar.insert(btn, -1)
 
-        but = Gtk.ToolButton(icon_widget=self.icons['add_sibling'])
-        but.set_tooltip_text(_("Insert sibling keybind"))
-        but.connect('clicked', lambda but: self.insert_sibling(OBKeyBind()))
-        toolbar.insert(but, -1)
-
-        but = Gtk.ToolButton(icon_widget=self.icons['add_child'])
-        but.set_tooltip_text(_("Insert child keybind"))
-        but.connect('clicked', lambda but: self.insert_child(OBKeyBind()))
-        toolbar.insert(but, -1)
-        self.sw_insert_child.append(but)
-
-        but = Gtk.ToolButton.new_from_stock("gtk-remove")
-        but.set_tooltip_text(_("Remove keybind"))
-        but.connect('clicked', lambda but: self.del_selected())
-        toolbar.insert(but, -1)
-        self.sw_selection_available.append(but)
+        btn = _tool_button("list-remove",
+            _("Remove keybind"),
+            lambda b: self.del_selected())
+        self.sw_selection_available.append(btn)
+        toolbar.insert(btn, -1)
 
         sep = Gtk.SeparatorToolItem()
         sep.set_draw(False)
@@ -334,10 +337,9 @@ class KeyTable:
 
         toolbar.insert(Gtk.SeparatorToolItem(), -1)
 
-        but = Gtk.ToolButton.new_from_stock("gtk-quit")
-        but.set_tooltip_text(_("Quit application"))
-        but.connect('clicked', lambda but: self.quit_cb())
-        toolbar.insert(but, -1)
+        toolbar.insert(_tool_button("application-exit",
+            _("Quit application"),
+            lambda b: self.quit_cb()), -1)
         return toolbar
 
     def apply_cqk_initial_value(self):
@@ -354,12 +356,6 @@ class KeyTable:
                 (accel_key, int(accel_mods), kb.key, chroot, show_chroot, kb))
         for c in kb.children:
             self.apply_keybind(c, n)
-
-    def load_icons(self):
-        icons = {}
-        icons['add_sibling'] = Gtk.Image.new_from_file(os.path.join(config_icons, "add_sibling.png"))
-        icons['add_child']   = Gtk.Image.new_from_file(os.path.join(config_icons, "add_child.png"))
-        return icons
 
     # callbacks
 
@@ -528,27 +524,31 @@ class KeyTable:
 class PropertyTable:
     def __init__(self, mark_dirty=None):
         self._mark_dirty = mark_dirty
+        self._row = 0
         self.widget = Gtk.ScrolledWindow()
-        self.table = Gtk.Table(1, 2)
-        self.table.set_row_spacings(5)
-        self.widget.add_with_viewport(self.table)
+        self.table = Gtk.Grid()
+        self.table.set_row_spacing(6)
+        self.table.set_column_spacing(8)
+        self.table.set_margin_start(6)
+        self.table.set_margin_end(6)
+        self.table.set_margin_top(6)
+        self.table.set_margin_bottom(6)
+        self.widget.add(self.table)
         self.widget.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
 
-    def add_row(self, label_text, table):
+    def add_row(self, label_text, widget):
         label = Gtk.Label(label=_(label_text))
         label.set_xalign(0)
         label.set_yalign(0)
-        row = self.table.props.n_rows
-        self.table.attach(label, 0, 1, row, row + 1,
-                          Gtk.AttachOptions.EXPAND | Gtk.AttachOptions.FILL, 0, 5, 0)
-        self.table.attach(table, 1, 2, row, row + 1, Gtk.AttachOptions.FILL, 0, 5, 0)
+        widget.set_hexpand(True)
+        self.table.attach(label,  0, self._row, 1, 1)
+        self.table.attach(widget, 1, self._row, 1, 1)
+        self._row += 1
 
     def clear(self):
-        cs = self.table.get_children()
-        cs.reverse()
-        for c in cs:
-            self.table.remove(c)
-        self.table.resize(1, 2)
+        for child in self.table.get_children():
+            self.table.remove(child)
+        self._row = 0
 
     def set_action(self, action):
         self.clear()
@@ -556,7 +556,6 @@ class PropertyTable:
             return
         for a in action.option_defs:
             self.add_row(a.name + ":", a.generate_widget(action, self._mark_dirty))
-        self.table.queue_resize()
         self.table.show_all()
 
 #------------------------------------------------------------------------------
@@ -641,27 +640,19 @@ class ActionList:
     def create_context_menu(self):
         context_menu = Gtk.Menu()
 
-        item = Gtk.ImageMenuItem.new_from_stock("gtk-cut", None)
-        item.connect('activate', lambda menu: self.cut_selected())
-        item.get_child().set_label(_("Cu_t"))
+        item = _menu_item("edit-cut",    _("Cu_t"),   lambda m: self.cut_selected())
         context_menu.append(item)
         self.sw_selection_available.append(item)
 
-        item = Gtk.ImageMenuItem.new_from_stock("gtk-copy", None)
-        item.connect('activate', lambda menu: self.copy_selected())
-        item.get_child().set_label(_("_Copy"))
+        item = _menu_item("edit-copy",   _("_Copy"),  lambda m: self.copy_selected())
         context_menu.append(item)
         self.sw_selection_available.append(item)
 
-        item = Gtk.ImageMenuItem.new_from_stock("gtk-paste", None)
-        item.connect('activate', lambda menu: self.insert_action(self.copied))
-        item.get_child().set_label(_("_Paste"))
+        item = _menu_item("edit-paste",  _("_Paste"), lambda m: self.insert_action(self.copied))
         context_menu.append(item)
         self.sw_paste_buffer.append(item)
 
-        item = Gtk.ImageMenuItem.new_from_stock("gtk-remove", None)
-        item.connect('activate', lambda menu: self.del_selected())
-        item.get_child().set_label(_("_Remove"))
+        item = _menu_item("list-remove", _("_Remove"), lambda m: self.del_selected())
         context_menu.append(item)
         self.sw_selection_available.append(item)
 
@@ -674,39 +665,30 @@ class ActionList:
         toolbar.set_icon_size(Gtk.IconSize.SMALL_TOOLBAR)
         toolbar.set_show_arrow(False)
 
-        but = Gtk.ToolButton.new_from_stock("gtk-add")
-        but.set_tooltip_text(_("Insert action"))
-        but.connect('clicked', lambda but: self.insert_action(OBAction("Focus")))
-        toolbar.insert(but, -1)
+        toolbar.insert(_tool_button("list-add",
+            _("Insert action"),
+            lambda b: self.insert_action(OBAction("Focus"))), -1)
 
-        but = Gtk.ToolButton.new_from_stock("gtk-remove")
-        but.set_tooltip_text(_("Remove action"))
-        but.connect('clicked', lambda but: self.del_selected())
-        toolbar.insert(but, -1)
-        self.sw_selection_available.append(but)
+        btn = _tool_button("list-remove", _("Remove action"), lambda b: self.del_selected())
+        self.sw_selection_available.append(btn)
+        toolbar.insert(btn, -1)
 
-        but = Gtk.ToolButton.new_from_stock("gtk-go-up")
-        but.set_tooltip_text(_("Move action up"))
-        but.connect('clicked', lambda but: self.move_selected_up())
-        toolbar.insert(but, -1)
-        self.sw_can_move_up.append(but)
+        btn = _tool_button("go-up", _("Move action up"), lambda b: self.move_selected_up())
+        self.sw_can_move_up.append(btn)
+        toolbar.insert(btn, -1)
 
-        but = Gtk.ToolButton.new_from_stock("gtk-go-down")
-        but.set_tooltip_text(_("Move action down"))
-        but.connect('clicked', lambda but: self.move_selected_down())
-        toolbar.insert(but, -1)
-        self.sw_can_move_down.append(but)
+        btn = _tool_button("go-down", _("Move action down"), lambda b: self.move_selected_down())
+        self.sw_can_move_down.append(btn)
+        toolbar.insert(btn, -1)
 
         sep = Gtk.SeparatorToolItem()
         sep.set_draw(False)
         sep.set_expand(True)
         toolbar.insert(sep, -1)
 
-        but = Gtk.ToolButton.new_from_stock("gtk-delete")
-        but.set_tooltip_text(_("Remove all actions"))
-        but.connect('clicked', lambda but: self.clear())
-        toolbar.insert(but, -1)
-        self.sw_action_list_nonempty.append(but)
+        btn = _tool_button("edit-delete", _("Remove all actions"), lambda b: self.clear())
+        self.sw_action_list_nonempty.append(btn)
+        toolbar.insert(btn, -1)
         return toolbar
 
     # callbacks
@@ -1200,18 +1182,20 @@ class OCStartupNotify(object):
         enabled.set_active(action.options['startupnotify_enabled'])
         enabled.connect('toggled', enabled_toggled, action, sens_list)
 
-        def put_table(table, label_text, widget, row, addtosens=True):
+        def put_table(grid, label_text, widget, row, addtosens=True):
             label = Gtk.Label(label=_(label_text))
-            label.set_padding(5, 5)
+            label.set_margin_start(5)
+            label.set_margin_end(5)
             label.set_xalign(0)
             label.set_yalign(0)
             if addtosens:
                 sens_list.append(label)
-            table.attach(label, 0, 1, row, row + 1,
-                         Gtk.AttachOptions.EXPAND | Gtk.AttachOptions.FILL, 0, 0, 0)
-            table.attach(widget, 1, 2, row, row + 1, Gtk.AttachOptions.FILL, 0, 0, 0)
+            grid.attach(label,  0, row, 1, 1)
+            grid.attach(widget, 1, row, 1, 1)
 
-        table = Gtk.Table(1, 2)
+        table = Gtk.Grid()
+        table.set_row_spacing(4)
+        table.set_column_spacing(6)
         put_table(table, "enabled:", enabled, 0, False)
         put_table(table, "wmclass:", wmclass, 1)
         put_table(table, "name:", name, 2)

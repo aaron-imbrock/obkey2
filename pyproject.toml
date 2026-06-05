@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "obkey2"
-version = "0.0.11"
+version = "0.0.12"
 description = "Openbox Key Editor"
 authors = [{name = "Aaron Imbrock", email = "contact@sizza.net"}]
 license = {text = "MIT"}
@@ -15,7 +15,7 @@ dependencies = [
 ]
 
 [project.scripts]
-obkey = "obkey2.__main__:main"
+obkey = "obkey2.app:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/obkey2"]

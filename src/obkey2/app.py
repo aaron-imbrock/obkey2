@@ -39,8 +39,20 @@ def main():
     ob.load(path)
 
     win = Gtk.Window()
-    win.set_default_size(640, 480)
-    win.set_title(obkey_classes.config_title)
+    win.set_default_size(800, 560)
+
+    header = Gtk.HeaderBar()
+    header.set_show_close_button(True)
+    header.set_title(obkey_classes.config_title)
+    header.set_subtitle(os.path.basename(path))
+
+    save_btn = Gtk.Button()
+    save_btn.set_image(Gtk.Image.new_from_icon_name("document-save-symbolic", Gtk.IconSize.BUTTON))
+    save_btn.set_tooltip_text("Save " + path)
+    save_btn.connect("clicked", lambda b: ob.save())
+    header.pack_start(save_btn)
+
+    win.set_titlebar(header)
 
     def request_quit():
         if ob.dirty:
@@ -53,12 +65,12 @@ def main():
 
     def on_delete_event(widget, event):
         request_quit()
-        return True  # always suppress automatic destroy; request_quit calls main_quit
+        return True
 
     win.connect("delete-event", on_delete_event)
 
-    tbl = obkey_classes.PropertyTable(mark_dirty=ob.mark_dirty)
-    al  = obkey_classes.ActionList(tbl, on_change=ob.mark_dirty)
+    tbl  = obkey_classes.PropertyTable(mark_dirty=ob.mark_dirty)
+    al   = obkey_classes.ActionList(tbl, on_change=ob.mark_dirty)
     ktbl = obkey_classes.KeyTable(al, ob, quit_cb=request_quit)
 
     vbox = Gtk.Paned(orientation=Gtk.Orientation.VERTICAL)
@@ -72,11 +84,10 @@ def main():
     win.add(hbox)
     win.show_all()
     w, h = win.get_size()
-    hbox.set_position(w - 250)
+    hbox.set_position(w - 280)
+    vbox.set_position(h // 2)
     ktbl.view.grab_focus()
     Gtk.main()
-
-    # Destroy the window after the main loop exits so GTK cleans up properly.
     win.destroy()
 
 
