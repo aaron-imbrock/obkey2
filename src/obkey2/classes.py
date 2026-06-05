@@ -548,6 +548,7 @@ class PropertyTable:
     def clear(self):
         for child in self.table.get_children():
             self.table.remove(child)
+            child.destroy()
         self._row = 0
 
     def set_action(self, action):
@@ -625,9 +626,10 @@ class ActionList:
         renderer.props.model = self.create_choices()
         renderer.props.text_column = 0
         renderer.props.editable = True
-        renderer.props.has_entry = False
+        renderer.props.has_entry = True
         renderer.connect('changed', self.action_class_changed)
         renderer.connect('editing-started', editingstarted)
+        renderer.connect('edited', self.action_text_edited)
 
         column = Gtk.TreeViewColumn(_("Actions"), renderer, text=0)
 
@@ -719,6 +721,21 @@ class ActionList:
             self.proptable.set_action(self.model[path][1])
         if self._on_change:
             self._on_change()
+
+    def action_text_edited(self, cell, path, text):
+        choices = cell.props.model
+        it = choices.get_iter_first()
+        while it:
+            if choices.get_value(it, 0) == text:
+                canonical = choices.get_value(it, 1)
+                self.model[path][0] = text
+                self.model[path][1].mutate(canonical)
+                if self.proptable:
+                    self.proptable.set_action(self.model[path][1])
+                if self._on_change:
+                    self._on_change()
+                return
+            it = choices.iter_next(it)
 
     def view_cursor_changed(self, selection):
         (model, it) = selection.get_selected()
