@@ -1,6 +1,7 @@
 import gi
 gi.require_version('Gtk', '3.0')
 import xml.dom.minidom
+import xml.sax.saxutils
 from io import StringIO
 from gi.repository import GObject, Gtk
 import copy
@@ -947,6 +948,18 @@ def fixed_toprettyxml(self, indent="", addindent="\t", newl="\n"):
     fixed_writexml(self, writer, indent, addindent, newl)
     return writer.getvalue()
 
+
+def xml_escape(text):
+    if text is None:
+        return ""
+    return xml.sax.saxutils.escape(str(text))
+
+
+def xml_quoteattr(text):
+    if text is None:
+        return '""'
+    return xml.sax.saxutils.quoteattr(str(text))
+
 #------------------------------------------------------------------------------
 # Option Classes
 #------------------------------------------------------------------------------
@@ -979,7 +992,7 @@ class OCString(object):
         if val == self.default:
             return None
         return xml.dom.minidom.parseString(
-            "<" + str(self.name) + ">" + str(val) + "</" + str(self.name) + ">"
+            "<" + str(self.name) + ">" + xml_escape(val) + "</" + str(self.name) + ">"
         ).documentElement
 
     def generate_widget(self, action, mark_dirty=None):
@@ -1013,7 +1026,7 @@ class OCCombo(object):
         if val == self.default:
             return None
         return xml.dom.minidom.parseString(
-            "<" + str(self.name) + ">" + str(val) + "</" + str(self.name) + ">"
+            "<" + str(self.name) + ">" + xml_escape(val) + "</" + str(self.name) + ">"
         ).documentElement
 
     def generate_widget(self, action, mark_dirty=None):
@@ -1057,7 +1070,7 @@ class OCNumber(object):
         if val == self.default:
             return None
         return xml.dom.minidom.parseString(
-            "<" + str(self.name) + ">" + str(val) + "</" + str(self.name) + ">"
+            "<" + str(self.name) + ">" + xml_escape(val) + "</" + str(self.name) + ">"
         ).documentElement
 
     def generate_widget(self, action, mark_dirty=None):
@@ -1145,7 +1158,7 @@ class OCStartupNotify(object):
                          ('startupnotify_icon', 'icon')]:
             if action.options[key]:
                 root.appendChild(xml.dom.minidom.parseString(
-                    "<" + tag + ">" + action.options[key] + "</" + tag + ">"
+                    "<" + tag + ">" + xml_escape(action.options[key]) + "</" + tag + ">"
                 ).documentElement)
         return root
 
@@ -1412,7 +1425,7 @@ class OBAction:
 
     def deparse(self):
         root = xml.dom.minidom.parseString(
-            '<action name="' + str(self.name) + '"/>'
+            '<action name=' + xml_quoteattr(self.name) + '/>'
         ).documentElement
         for od in self.option_defs:
             od_node = od.deparse(self)
@@ -1465,11 +1478,11 @@ class OBKeyBind:
     def deparse(self):
         if self.chroot:
             root = xml.dom.minidom.parseString(
-                '<keybind key="' + str(self.key) + '" chroot="yes"/>'
+                '<keybind key=' + xml_quoteattr(self.key) + ' chroot="yes"/>'
             ).documentElement
         else:
             root = xml.dom.minidom.parseString(
-                '<keybind key="' + str(self.key) + '"/>'
+                '<keybind key=' + xml_quoteattr(self.key) + '/>'
             ).documentElement
         if self.children:
             for k in self.children:
@@ -1512,7 +1525,7 @@ class OBKeyboard:
     def deparse(self):
         root = xml.dom.minidom.parseString('<keyboard/>').documentElement
         chainQuitKey_node = xml.dom.minidom.parseString(
-            '<chainQuitKey>' + str(self.chainQuitKey) + '</chainQuitKey>'
+            '<chainQuitKey>' + xml_escape(self.chainQuitKey) + '</chainQuitKey>'
         ).documentElement
         root.appendChild(chainQuitKey_node)
         for k in self.keybinds:

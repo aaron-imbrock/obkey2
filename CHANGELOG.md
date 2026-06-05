@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented here.
 
+## [0.0.10] - 2026-06-04
+
+### Fixed
+- Escape special XML characters during save serialization so keyboard data containing `&`, `<`, `"`, and similar values writes valid Openbox XML.
+- Apply `xml_quoteattr` to attribute values (`action name=`, `keybind key=`) so keys and action names with special characters round-trip correctly.
+
+### Added
+- `xml_escape()` and `xml_quoteattr()` helper functions wrapping `xml.sax.saxutils` for consistent XML encoding across all serialization paths.
+- Test suite (`tests/test_xml_serialization.py`) covering XML escaping in `OCString.deparse` and `OBKeyboard` serialization round-trips.
+
 ## [0.0.8] - 2026-05-24
 
 ### Changed
