@@ -51,6 +51,7 @@ replace_table_gtk2openbox = {
     "Mod4":    "Mod4",
     "Mod5":    "Mod5",
     "Control": "C",
+    "Primary": "C",
     "Alt":     "A",
     "Meta":    "M",
     "Super":   "W",
@@ -926,7 +927,7 @@ def fixed_writexml(self, writer, indent="", addindent="", newl=""):
     attrs = self._get_attributes()
     for a_name in sorted(attrs.keys()):
         writer.write(" %s=\"" % a_name)
-        xml.dom.minidom._write_data(writer, attrs[a_name].value)
+        writer.write(xml.sax.saxutils.escape(attrs[a_name].value, {'"': '&quot;'}))
         writer.write("\"")
     if self.childNodes:
         if (len(self.childNodes) == 1

@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented here.
 
+## [0.0.11] - 2026-06-04
+
+### Fixed
+- Replace `xml.dom.minidom._write_data` call with `xml.sax.saxutils.escape` to fix `TypeError` on Python 3.13 where the private API gained a required third argument.
+- Add `"Primary": "C"` to `replace_table_gtk2openbox` so GTK3's `<Primary>` modifier alias for Control no longer raises `KeyError` during accelerator editing.
+
 ## [0.0.10] - 2026-06-04
 
 ### Fixed

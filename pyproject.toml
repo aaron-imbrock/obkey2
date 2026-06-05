@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "obkey2"
-version = "0.0.10"
+version = "0.0.11"
 description = "Openbox Key Editor"
 authors = [{name = "Aaron Imbrock", email = "contact@sizza.net"}]
 license = {text = "MIT"}
