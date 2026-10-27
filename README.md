@@ -6,25 +6,22 @@ A graphical editor for the keyboard shortcuts section of the Openbox window mana
 
 ### System packages (install via your package manager)
 
-**Debian/Ubuntu:**
+**Debian**
 ```bash
 sudo apt install python3-gi python3-gi-cairo gir1.2-gtk-3.0
 ```
 
-**Fedora/RHEL:**
+**FreeBSD 15**
 ```bash
-sudo dnf install python3-gobject gtk3
+# Assumes python3.12
+pkg install py312-pygobject
+pkg install py312-pipx
 ```
-
-**Arch Linux:**
-```bash
-sudo pacman -S python-gobject gtk3
-```
-
-> You also need [Openbox](http://openbox.org) itself installed. obkey2 edits `~/.config/openbox/rc.xml`.
 
 ## Installation
 
+Debian
+---
 ```bash
 # Install uv if you don't have it
 curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -40,6 +37,12 @@ For development (editable install):
 
 ```bash
 uv pip install -e .
+```
+
+FreeBSD 15
+---
+```bash
+pipx install --python python3.12 --system-site-packages git+https://github.com/aaron-imbrock/obkey2.git
 ```
 
 ## Usage
